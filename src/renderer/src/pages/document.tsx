@@ -1,15 +1,37 @@
 import { useParams } from 'react-router-dom'
-import { Editor } from '../components/Editor'
+import { Editor, OnContentUpdateParams } from '../components/Editor'
 import { ToC } from '../components/ToC'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { Document as IPCDocument} from '@shared/types/ipc'
 
 export function Document() {
    const { id } = useParams< {id: string }>()
+   const queryClient = useQueryClient()
 
    const { data, isFetching } = useQuery(['document', id], async () => {
       const response = await window.api.fetchDocument({ id: id! })
       return response.data
+   })
+
+   const { mutateAsync: saveDocument } = useMutation( async ({ title, content }: OnContentUpdateParams) => {
+      await window.api.saveDocument({
+         id: id!,
+         title,
+         content
+      })
+   },{
+      onSuccess: (_, { title }) => {
+         queryClient.setQueryData<IPCDocument[]>(['documents'], (documents) => {
+            return documents?.map((document) => {
+               if (document.id === id) {
+                  return { ...document, title}
+               }
+
+               return document
+            })
+         })
+      }
    })
 
    const initialContent = useMemo(() => {
@@ -18,6 +40,10 @@ export function Document() {
       }
       return ''
    }, [data])
+
+   function handleEditorContentUpdated({title, content}: OnContentUpdateParams) {
+      saveDocument({title, content})
+   }
 
    return (
       <main className='flex-1 flex py-12 px-10 gap-8'>
@@ -34,7 +60,12 @@ export function Document() {
             </ToC.Root>
          </aside>
          <section className='flex-1 flex flex-col items-center'>
-            {!isFetching && data && <Editor content={initialContent}/>}
+            {!isFetching && data && 
+               <Editor 
+                  content={initialContent}
+                  onContentUpdated={handleEditorContentUpdated}
+               />
+            }
          </section>
       </main>
    )
