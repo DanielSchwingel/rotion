@@ -22,7 +22,7 @@ const api = {
 	},
 	
 	createDocument(): Promise<CreateDocumentResponse> {
-		return ipcRenderer.invoke(IPC.DOCUMENTS.FETCH)
+		return ipcRenderer.invoke(IPC.DOCUMENTS.CREATE)
 	},
 
 	saveDocument(request: SaveDocumentRequest): Promise<void> {

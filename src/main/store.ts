@@ -11,4 +11,6 @@ const store = new Store<StoreType>({
    }
 })
 
+console.log(store.path)
+
 export { store }
